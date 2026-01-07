@@ -1,5 +1,4 @@
 import Paste from "../models/Paste.js";
-import { v4 as uuidv4 } from "uuid";
 import { getNowMs } from "../utils/time.js";
 
 export async function createPaste(req, res) {
@@ -30,20 +29,21 @@ export async function createPaste(req, res) {
         ? new Date(now + ttl_seconds * 1000)
         : null;
 
+    console.log("Received max_views:", max_views);
+
     const paste = await Paste.create({
       content,
       createdAt: new Date(now),
       expiresAt,
-      maxViews: max_views ?? null,
+      maxViews: max_views ?? null,      // FIXED VARIABLE
       viewCount: 0,
     });
 
-    const id = paste._id.toString();
-
     return res.status(201).json({
-      id,
-      url: `${req.protocol}://${req.get("host")}/p/${id}`,
+      id: paste._id.toString(),
+      url: `${req.protocol}://${req.get("host")}/p/${paste._id.toString()}`,
     });
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "internal server error" });
@@ -61,17 +61,14 @@ export async function fetchPaste(req, res) {
       return res.status(404).json({ error: "paste not found" });
     }
 
-    // Check TTL expiry
     if (paste.expiresAt && paste.expiresAt.getTime() <= now) {
-      return res.status(404).json({ error: "paste expired" });
+      return res.status(410).json({ error: "paste expired" });
     }
 
-    // Check view limit
-    if (paste.maxViews && paste.viewCount >= paste.maxViews) {
-      return res.status(404).json({ error: "view limit exceeded" });
+    if (paste.maxViews !== null && paste.viewCount >= paste.maxViews) {
+      return res.status(410).json({ error: "view limit exceeded" });
     }
 
-    // Increment view count (counts as a view)
     paste.viewCount += 1;
     await paste.save();
 
@@ -85,6 +82,7 @@ export async function fetchPaste(req, res) {
       remaining_views: remaining,
       expires_at: paste.expiresAt ?? null,
     });
+
   } catch (err) {
     console.error(err);
     return res.status(400).json({ error: "invalid paste id format" });

@@ -3,8 +3,8 @@ import { createPaste, fetchPaste } from "../controllers/pasteController.js";
 
 const router = express.Router();
 
-router.post("/pastes", createPaste);
+router.post("/", createPaste);
 
-router.get("/pastes/:id", fetchPaste);
+router.get("/:id", fetchPaste);
 
 export default router;

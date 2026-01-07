@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api", healthRoute);
-app.use("/api", pasteRoutes);
+app.use("/api/pastes", pasteRoutes);
 app.use("/p", htmlRoute);
 
 
